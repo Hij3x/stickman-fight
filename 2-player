@@ -75,50 +75,5 @@ class Player{
  draw(c){
   const cx=this.x+this.width/2,hr=this.width*.7,headY=this.y-this.height,neckY=headY+hr*2,hipY=this.y-15;
   c.strokeStyle=this.color;c.lineWidth=5;c.lineCap="round";
-  c.beginPath();c.arc(cx,headY+hr,hr,0,Math.PI*2);c.stroke(); // head
-  c.beginPath();c.moveTo(cx,neckY);c.lineTo(cx,hipY);c.stroke(); // body
-  const legLen=38;c.beginPath();c.moveTo(cx,hipY);c.lineTo(cx-18,hipY+legLen);c.moveTo(cx,hipY);c.lineTo(cx+18,hipY+legLen);c.stroke(); // legs
-  const shoulderY=neckY+10,armLen=32;
-  // back arm
-  c.beginPath();c.moveTo(cx,shoulderY);c.lineTo(cx-this.facing*armLen*.6,shoulderY+armLen*.4);c.stroke();
-  // front arm
-  c.beginPath();c.moveTo(cx,shoulderY);
-  if(this.isAttacking){c.lineTo(cx+this.facing*(armLen+12),shoulderY-4);}else{c.lineTo(cx+this.facing*armLen*.7,shoulderY+armLen*.2);}
-  c.stroke();
-  if(this.isAttacking){const fx=cx+this.facing*(armLen+12),fy=shoulderY-4;c.beginPath();c.arc(fx,fy,6,0,Math.PI*2);c.fillStyle=this.color;c.fill();}
- }
-}
-
-const p1=new Player({x:150,y:GROUND_Y,width:30,height:110,color:"#3aa8ff",facing:1,hp:100,control:{left:"KeyA",right:"KeyD",up:"KeyW",attack:"KeyS"}});
-const p2=new Player({x:canvas.width-180,y:GROUND_Y,width:30,height:110,color:"#ff5555",facing:-1,hp:100,control:{left:"ArrowLeft",right:"ArrowRight",up:"ArrowUp",attack:"ArrowDown"}});
-
-let lastTime=0,gameOver=false,winnerText="",showSignature=false;
-
-function overlap(a,b){return a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.height>b.y}
-function hit(a,b){if(a.hasDealtDamage||!a.isAttacking)return;const ar=a.getAttackRect(),br={x:b.x,y:b.y-b.height,width:b.width,height:b.height};if(overlap(ar,br)){a.hasDealtDamage=true;b.hp-=12;b.vx=520*a.facing;b.vy=-520;}}
-function updateHP(){hpBar1.style.transform=`scaleX(${Math.max(0,p1.hp/p1.hpMax)})`;hpBar2.style.transform=`scaleX(${Math.max(0,p2.hp/p2.hpMax)})`;}
-function reset(){p1.reset(150,1);p2.reset(canvas.width-180,-1);gameOver=false;showSignature=false;winnerText="";updateHP();}
-function bg(){ctx.clearRect(0,0,canvas.width,canvas.height);ctx.strokeStyle="#444";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,GROUND_Y+.5);ctx.lineTo(canvas.width,GROUND_Y+.5);ctx.stroke();}
-function drawEnd(){
- if(!gameOver)return;
- ctx.save();ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,canvas.width,canvas.height);
- ctx.fillStyle="#fff";ctx.textAlign="center";
- ctx.font="38px system-ui";ctx.fillText(winnerText,canvas.width/2,canvas.height/2-40);
- ctx.font="26px system-ui";ctx.fillText("👑 KING — Made by OfficialYaman 👑",canvas.width/2,canvas.height/2);
- ctx.font="18px system-ui";ctx.fillText("Press R to Restart",canvas.width/2,canvas.height/2+40);
- ctx.restore();
-}
-function loop(t){
- if(!lastTime)lastTime=t;const dt=(t-lastTime)/1000;lastTime=t;
- if(keys["KeyR"])reset();
- if(!gameOver){
-  p1.update(dt);p2.update(dt);hit(p1,p2);hit(p2,p1);updateHP();
-  if(p1.dead||p2.dead){gameOver=true;winnerText=p1.dead&&p2.dead?"Draw!":p2.dead?"Player 1 Wins!":"Player 2 Wins!";}
- }
- bg();p1.draw(ctx);p2.draw(ctx);drawEnd();requestAnimationFrame(loop);
-}
-reset();requestAnimationFrame(loop);
-</script>
-</body>
-</html>
-
+  // head
+  c.beg
