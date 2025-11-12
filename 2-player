@@ -21,6 +21,7 @@
     }
 
     #wrapper {
+      position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -135,6 +136,63 @@
     .center-panel b {
       opacity: 1;
     }
+
+    /* Menu overlay */
+    .menu-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      background: rgba(0, 0, 0, 0.78);
+      z-index: 5;
+      text-align: center;
+    }
+
+    .menu-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .menu-sub {
+      font-size: 12px;
+      opacity: 0.8;
+      margin-bottom: 6px;
+    }
+
+    .menu-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      max-width: 420px;
+    }
+
+    .menu-buttons button {
+      padding: 8px 14px;
+      min-width: 150px;
+      border-radius: 999px;
+      border: 1px solid #4b4f61;
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      font-size: 13px;
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+    }
+
+    .menu-buttons button:hover {
+      transform: translateY(-1px);
+      background: rgba(30, 64, 175, 0.95);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.9);
+    }
+
+    .menu-note {
+      font-size: 11px;
+      opacity: 0.7;
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
@@ -143,6 +201,22 @@
     <h1>Stickman Combo Fight</h1>
     <div class="subtitle">Punch, kick, build combo, unleash your ultimate. 👑 Made by OfficialYaman</div>
   </div>
+
+  <!-- START MENU -->
+  <div id="mainMenu" class="menu-overlay">
+    <div class="menu-title">Choose Mode / Arena</div>
+    <div class="menu-sub">Click an option to start the fight.</div>
+    <div class="menu-buttons">
+      <button onclick="choosePreset('pvp-classic')">1v1 Classic</button>
+      <button onclick="choosePreset('ai-classic')">1vAI (Classic)</button>
+      <button onclick="choosePreset('pvp-sahara')">Sahara 1v1</button>
+      <button onclick="choosePreset('pvp-snowy')">Snowy 1v1 ❄️</button>
+    </div>
+    <div class="menu-note">
+      Controls: Player 1 uses WASD + S/Shift, Player 2 uses Arrows + ↓/Shift.
+    </div>
+  </div>
+  <!-- END MENU -->
 
   <div class="hud-row">
     <!-- Player 1 HUD -->
@@ -215,8 +289,19 @@
   const keys = {};
   const keysJustPressed = {};
 
+  // Game mode & arena
+  // mode: "pvp" or "ai"
+  // arena: "classic", "sahara", "snowy"
+  let mode = "pvp";
+  let arena = "classic";
+  let gameStarted = false;
+
+  // Snow
+  const SNOW_COUNT = 120;
+  let snowflakes = [];
+  let lastDt = 0;
+
   window.addEventListener("keydown", (e) => {
-    // only mark justPressed when it transitions from not pressed to pressed
     if (!keys[e.code]) {
       keysJustPressed[e.code] = true;
     }
@@ -653,25 +738,105 @@
     updateBars();
   }
 
+  function initSnow() {
+    snowflakes = [];
+    for (let i = 0; i < SNOW_COUNT; i++) {
+      snowflakes.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vy: 30 + Math.random() * 70,
+        r: 1 + Math.random() * 2
+      });
+    }
+  }
+
+  function updateAndDrawSnow() {
+    if (!snowflakes.length) initSnow();
+    ctx.save();
+    ctx.fillStyle = "rgba(248,250,252,0.9)";
+    for (const flake of snowflakes) {
+      flake.y += flake.vy * lastDt;
+      if (flake.y > canvas.height + 5) {
+        flake.y = -10;
+        flake.x = Math.random() * canvas.width;
+      }
+      ctx.beginPath();
+      ctx.arc(flake.x, flake.y, flake.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
   function drawBackground() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // arena backgrounds
+    if (arena === "classic") {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Let CSS gradient show through, just add floor + pillars
+      ctx.strokeStyle = "#27272f";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, GROUND_Y + 0.5);
+      ctx.lineTo(canvas.width, GROUND_Y + 0.5);
+      ctx.stroke();
 
-    // Ground line
-    ctx.strokeStyle = "#27272f";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(0, GROUND_Y + 0.5);
-    ctx.lineTo(canvas.width, GROUND_Y + 0.5);
-    ctx.stroke();
+      ctx.fillStyle = "#111827";
+      ctx.fillRect(40, GROUND_Y - 70, 18, 70);
+      ctx.fillRect(canvas.width - 58, GROUND_Y - 70, 18, 70);
+    } else if (arena === "sahara") {
+      // Desert sky & sand
+      let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      grad.addColorStop(0, "#fed7aa");
+      grad.addColorStop(0.5, "#fdba74");
+      grad.addColorStop(1, "#7c2d12");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Simple glowing "stage" lights
-    ctx.fillStyle = "#111827";
-    ctx.fillRect(40, GROUND_Y - 70, 18, 70);
-    ctx.fillRect(canvas.width - 58, GROUND_Y - 70, 18, 70);
+      // sun
+      ctx.beginPath();
+      ctx.arc(canvas.width * 0.8, canvas.height * 0.2, 40, 0, Math.PI * 2);
+      ctx.fillStyle = "#fde68a";
+      ctx.fill();
+
+      // dunes
+      ctx.fillStyle = "#f97316";
+      ctx.beginPath();
+      ctx.moveTo(0, GROUND_Y + 10);
+      ctx.quadraticCurveTo(canvas.width * 0.3, GROUND_Y - 20, canvas.width * 0.6, GROUND_Y + 15);
+      ctx.quadraticCurveTo(canvas.width * 0.8, GROUND_Y + 35, canvas.width, GROUND_Y + 10);
+      ctx.lineTo(canvas.width, canvas.height);
+      ctx.lineTo(0, canvas.height);
+      ctx.closePath();
+      ctx.fill();
+    } else if (arena === "snowy") {
+      // Snowy sky & ground
+      let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      grad.addColorStop(0, "#020617");
+      grad.addColorStop(0.5, "#0f172a");
+      grad.addColorStop(1, "#e5e7eb");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // snow ground
+      ctx.fillStyle = "#e5e7eb";
+      ctx.fillRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y);
+
+      // small hill
+      ctx.fillStyle = "#dbeafe";
+      ctx.beginPath();
+      ctx.moveTo(0, GROUND_Y + 10);
+      ctx.quadraticCurveTo(canvas.width * 0.4, GROUND_Y - 18, canvas.width, GROUND_Y + 10);
+      ctx.lineTo(canvas.width, canvas.height);
+      ctx.lineTo(0, canvas.height);
+      ctx.closePath();
+      ctx.fill();
+
+      // falling snow
+      updateAndDrawSnow();
+    }
   }
 
   function drawGameOver() {
-    if (!gameOver) return;
+    if (!gameOver || !gameStarted) return;
 
     ctx.save();
     ctx.fillStyle = "rgba(0,0,0,0.75)";
@@ -694,47 +859,104 @@
     ctx.restore();
   }
 
+  // Simple AI for 1vAI mode (Player 2)
+  function driveAI(aiPlayer, target) {
+    // clear AI-related keys
+    keys[aiPlayer.controls.left] = false;
+    keys[aiPlayer.controls.right] = false;
+    keys[aiPlayer.controls.up] = false;
+    keys[aiPlayer.controls.punch] = false;
+    keys[aiPlayer.controls.kick] = false;
+    keys[aiPlayer.controls.combo] = false;
+
+    const dx = target.x - aiPlayer.x;
+    const dist = Math.abs(dx);
+
+    // Move toward player
+    if (dist > 90) {
+      if (dx > 0) {
+        keys[aiPlayer.controls.right] = true;
+      } else {
+        keys[aiPlayer.controls.left] = true;
+      }
+    }
+
+    // Occasionally jump
+    if (Math.random() < 0.02) {
+      keysJustPressed[aiPlayer.controls.up] = true;
+    }
+
+    // Punch / kick if close
+    if (dist < 110 && Math.random() < 0.6) {
+      keysJustPressed[aiPlayer.controls.punch] = true;
+    }
+    if (dist < 80 && Math.random() < 0.35) {
+      keysJustPressed[aiPlayer.controls.kick] = true;
+    }
+
+    // Use combo if ready
+    if (aiPlayer.comboReady && aiPlayer.comboReady()) {
+      keysJustPressed[aiPlayer.controls.combo] = true;
+    }
+  }
+
   function gameLoop(timestamp) {
     if (!lastTime) lastTime = timestamp;
     const dt = (timestamp - lastTime) / 1000;
     lastTime = timestamp;
+    lastDt = dt;
 
-    // Restart
+    // Restart (does not go back to menu, just restarts fight)
     if (keys["KeyR"]) {
       resetGame();
     }
 
-    if (!gameOver) {
-      player1.update(dt);
-      player2.update(dt);
+    if (!gameStarted) {
+      // Just draw initial background and idle players
+      drawBackground();
+      player1.draw(ctx);
+      player2.draw(ctx);
+    } else {
+      if (!gameOver) {
+        // Player 1 is always human
+        player1.update(dt);
 
-      // Handle hits for each attack type
-      handleHit(player1, player2, "punch");
-      handleHit(player1, player2, "kick");
-      handleHit(player1, player2, "combo");
-
-      handleHit(player2, player1, "punch");
-      handleHit(player2, player1, "kick");
-      handleHit(player2, player1, "combo");
-
-      updateBars();
-
-      if (player1.dead || player2.dead) {
-        gameOver = true;
-        if (player1.dead && player2.dead) {
-          winnerText = "Double Knockout! Draw!";
-        } else if (player2.dead) {
-          winnerText = "Player 1 Wins!";
+        // Player 2: AI or human depending on mode
+        if (mode === "ai") {
+          driveAI(player2, player1);
+          player2.update(dt);
         } else {
-          winnerText = "Player 2 Wins!";
+          player2.update(dt);
+        }
+
+        // Handle hits for each attack type
+        handleHit(player1, player2, "punch");
+        handleHit(player1, player2, "kick");
+        handleHit(player1, player2, "combo");
+
+        handleHit(player2, player1, "punch");
+        handleHit(player2, player1, "kick");
+        handleHit(player2, player1, "combo");
+
+        updateBars();
+
+        if (player1.dead || player2.dead) {
+          gameOver = true;
+          if (player1.dead && player2.dead) {
+            winnerText = "Double Knockout! Draw!";
+          } else if (player2.dead) {
+            winnerText = "Player 1 Wins!";
+          } else {
+            winnerText = "Player 2 Wins!";
+          }
         }
       }
-    }
 
-    drawBackground();
-    player1.draw(ctx);
-    player2.draw(ctx);
-    drawGameOver();
+      drawBackground();
+      player1.draw(ctx);
+      player2.draw(ctx);
+      drawGameOver();
+    }
 
     // Clear per-frame "just pressed" keys
     for (const code in keysJustPressed) {
@@ -744,10 +966,40 @@
     requestAnimationFrame(gameLoop);
   }
 
+  // Called by menu buttons
+  function choosePreset(preset) {
+    if (preset === "pvp-classic") {
+      mode = "pvp";
+      arena = "classic";
+      snowflakes = [];
+    } else if (preset === "ai-classic") {
+      mode = "ai";
+      arena = "classic";
+      snowflakes = [];
+    } else if (preset === "pvp-sahara") {
+      mode = "pvp";
+      arena = "sahara";
+      snowflakes = [];
+    } else if (preset === "pvp-snowy") {
+      mode = "pvp";
+      arena = "snowy";
+      initSnow();
+    }
+    gameStarted = true;
+    resetGame();
+    const menu = document.getElementById("mainMenu");
+    if (menu) menu.style.display = "none";
+  }
+
+  // Expose choosePreset to global scope for onclick
+  window.choosePreset = choosePreset;
+
+  // Start idle state
   resetGame();
   requestAnimationFrame(gameLoop);
 </script>
 </body>
 </html>
+
 
 
